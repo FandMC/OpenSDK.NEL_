@@ -71,12 +71,12 @@ static async Task<string> ComputeCrcSalt()
     }
     else
     {
-        local = "D69EEC84C462D21F710C7F06872CF75C";
+        local = "22AC4B0143EFFC80F2905B267D4D84D3";
         await File.WriteAllTextAsync(localPath, local);
     }
 
     var http = new HttpWrapper("https://service.codexus.today",
-        options => { options.WithBearerToken("0e9327a2-d0f8-41d5-8e23-233de1824b9a.pk_053ff2d53503434bb42fe158"); });
+        options => { options.WithBearerToken("c4b97481-ad3f-4ced-966e-f906fb9d1913.pk_32a86c6092954bbe90db6c72"); });
 
 
     var result = local;
