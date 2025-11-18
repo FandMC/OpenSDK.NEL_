@@ -43,7 +43,7 @@ namespace OpenSDK.NEL.Manager
             var roles = await auth.Api<EntityQueryGameCharacters, Entities<EntityGameCharacter>>(
                 "/game-character/query/user-game-characters",
                 new EntityQueryGameCharacters { GameId = serverId, UserId = auth.EntityId });
-            var selected = roles.Data.FirstOrDefault(r => r.GameId == roleId);
+            var selected = roles.Data.FirstOrDefault(r => r.Name == roleId);
             if (selected == null) return false;
 
             var details = await auth.Api<EntityQueryNetGameDetailRequest, Entity<EntityQueryNetGameDetailItem>>(

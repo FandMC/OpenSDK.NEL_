@@ -35,7 +35,7 @@ internal class CreateRoleRandomHandler : IWsHandler
         }
         await CreateCharacterByIdAsync(auth, serverId, name);
         var roles = await GetServerRolesByIdAsync(auth, serverId);
-        var items = roles.Select(r => new { id = r.GameId, name = r.Name }).ToArray();
+        var items = roles.Select(r => new { id = r.Name, name = r.Name }).ToArray();
         var msg = JsonSerializer.Serialize(new { type = "server_roles", items, serverId, createdName = name });
         await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(msg)), System.Net.WebSockets.WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
     }
