@@ -1,17 +1,10 @@
 ﻿using System.Net;
 using System.Text;
 using System.Text.Json;
-using Codexus.Cipher.Entities;
-using Codexus.Cipher.Entities.WPFLauncher.NetGame;
-using Codexus.Cipher.Protocol;
 using Codexus.Cipher.Protocol.Registers;
-using Codexus.Development.SDK.Entities;
 using Codexus.Development.SDK.Manager;
-using Codexus.Game.Launcher.Services.Java;
-using Codexus.Game.Launcher.Utils;
 using Codexus.Interceptors;
 using Codexus.OpenSDK;
-using Codexus.OpenSDK.Entities.X19;
 using Codexus.OpenSDK.Entities.Yggdrasil;
 using Codexus.OpenSDK.Http;
 using Codexus.OpenSDK.Yggdrasil;
@@ -61,107 +54,6 @@ static async Task<Services> CreateServices()
     });
 
     return new Services(register, c4399, x19, yggdrasil);
-}
-
-static async Task<(X19AuthenticationOtp, string)> LoginWithCookieAsync(X19 x19)
-{
-    var cookie = ReadText("输入您的 Cookie: ");
-    return await x19.ContinueAsync(cookie);
-}
-
-static async Task<EntityGameCharacter[]> GetServerRolesAsync(X19AuthenticationOtp authOtp, EntityNetGameItem server)
-{
-    var roles = await authOtp.Api<EntityQueryGameCharacters, Entities<EntityGameCharacter>>(
-        "/game-character/query/user-game-characters",
-        new EntityQueryGameCharacters
-        {
-            GameId = server.EntityId,
-            UserId = authOtp.EntityId
-        });
-
-    return roles.Data;
-}
-
-static void CreateProxyInterceptor(
-    X19AuthenticationOtp authOtp,
-    StandardYggdrasil yggdrasil,
-    EntityNetGameItem server,
-    EntityGameCharacter character,
-    EntityMcVersion version,
-    EntityNetGameServerAddress address,
-    string mods)
-{
-    Interceptor.CreateInterceptor(
-        new EntitySocks5 { Enabled = false },
-        mods,
-        server.EntityId,
-        server.Name,
-        version.Name,
-        address.Ip,
-        address.Port,
-        character.Name,
-        authOtp.EntityId,
-        authOtp.Token,
-        (Action<string>)YggdrasilCallback);
-    return;
-
-    void YggdrasilCallback(string serverId)
-    {
-        Log.Information("Server ID: {Certification}", serverId);
-        var pair = Md5Mapping.GetMd5FromGameVersion(version.Name);
-
-        var signal = new SemaphoreSlim(0);
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var success = await yggdrasil.JoinServerAsync(new GameProfile
-                {
-                    GameId = server.EntityId,
-                    GameVersion = version.Name,
-                    BootstrapMd5 = pair.BootstrapMd5,
-                    DatFileMd5 = pair.DatFileMd5,
-                    Mods = JsonSerializer.Deserialize<ModList>(mods)!,
-                    User = new UserProfile { UserId = int.Parse(authOtp.EntityId), UserToken = authOtp.Token }
-                }, serverId);
-
-                if (success.IsSuccess)
-                    Log.Information("消息认证成功");
-                else
-                    Log.Error("消息认证失败: {Error}", success.Error);
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "认证过程中发生异常");
-            }
-            finally
-            {
-                signal.Release();
-            }
-        });
-
-        signal.Wait();
-    }
-}
-
-static async Task CreateCharacterAsync(X19AuthenticationOtp authOtp, EntityNetGameItem server, string name)
-{
-    try
-    {
-        await authOtp.Api<EntityCreateCharacter, JsonElement>(
-            "/game-character",
-            new EntityCreateCharacter
-            {
-                GameId = server.EntityId,
-                UserId = authOtp.EntityId,
-                Name = name
-            });
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "创建角色失败");
-        throw;
-    }
 }
 
 static async Task<string> ComputeCrcSalt()
@@ -342,74 +234,3 @@ static string GetMimeType(string path)
     return "application/octet-stream";
 }
 
-static string ReadText(string prompt)
-{
-    Log.Information(prompt);
-    Console.Write("> ");
-    return Console.ReadLine()?.Trim() ?? string.Empty;
-}
-
-static async Task CreateCharacterByIdAsync(X19AuthenticationOtp authOtp, string serverId, string name)
-{
-    await authOtp.Api<EntityCreateCharacter, JsonElement>(
-        "/game-character",
-        new EntityCreateCharacter
-        {
-            GameId = serverId,
-            UserId = authOtp.EntityId,
-            Name = name
-        });
-}
-
-static async Task<EntityGameCharacter[]> GetServerRolesByIdAsync(X19AuthenticationOtp authOtp, string serverId)
-{
-    var roles = await authOtp.Api<EntityQueryGameCharacters, Entities<EntityGameCharacter>>(
-        "/game-character/query/user-game-characters",
-        new EntityQueryGameCharacters
-        {
-            GameId = serverId,
-            UserId = authOtp.EntityId
-        });
-
-    return roles.Data;
-}
-
-static async Task<bool> StartProxyWithRoleByIdAsync(X19AuthenticationOtp authOtp, Services services, string serverId, string serverName, EntityGameCharacter selectedCharacter, CancellationToken ct)
-{
-    try
-    {
-        var details = await authOtp.Api<EntityQueryNetGameDetailRequest, Entity<EntityQueryNetGameDetailItem>>(
-            "/item-details/get_v2",
-            new EntityQueryNetGameDetailRequest { ItemId = serverId });
-
-        var address = await authOtp.Api<EntityAddressRequest, Entity<EntityNetGameServerAddress>>(
-            "/item-address/get",
-            new EntityAddressRequest { ItemId = serverId });
-
-        var version = details.Data!.McVersionList[0];
-        var gameVersion = GameVersionUtil.GetEnumFromGameVersion(version.Name);
-
-        var serverModInfo = await InstallerService.InstallGameMods(
-            authOtp.EntityId,
-            authOtp.Token,
-            gameVersion,
-            new WPFLauncher(),
-            serverId,
-            false);
-
-        var mods = JsonSerializer.Serialize(serverModInfo);
-
-        CreateProxyInterceptor(authOtp, services.Yggdrasil, new EntityNetGameItem { EntityId = serverId, Name = serverName }, selectedCharacter, version, address.Data!, mods);
-
-        await X19.InterconnectionApi.GameStartAsync(authOtp.EntityId, authOtp.Token, serverId);
-        Log.Information("代理服务器已创建并启动。");
-
-        await Task.Delay(Timeout.Infinite, ct);
-        return true;
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "启动代理时发生错误");
-        return false;
-    }
-}

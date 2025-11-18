@@ -134,10 +134,10 @@ internal class StartProxyHandler : IWsHandler
                 selectedCharacter.Name,
                 authOtp.EntityId,
                 authOtp.Token,
-                (System.Action<string>)((sid) =>
+                (Action<string>)((sid) =>
                 {
                     Log.Information("Server ID: {Certification}", sid);
-                    var pair = OpenSDK.NEL.Md5Mapping.GetMd5FromGameVersion(version.Name);
+                    var pair = Md5Mapping.GetMd5FromGameVersion(version.Name);
                     var signal = new SemaphoreSlim(0);
                     _ = Task.Run(async () =>
                     {
@@ -154,7 +154,7 @@ internal class StartProxyHandler : IWsHandler
                             }, sid);
                             if (success.IsSuccess) Log.Information("消息认证成功"); else Log.Error("消息认证失败: {Error}", success.Error);
                         }
-                        catch (System.Exception e)
+                        catch (Exception e)
                         {
                             Log.Error(e, "认证过程中发生异常");
                         }
@@ -191,51 +191,5 @@ internal class StartProxyHandler : IWsHandler
             Log.Error(ex, "启动代理时发生错误");
             return false;
         }
-    }
-
-    private static void CreateProxyInterceptor(X19AuthenticationOtp authOtp, StandardYggdrasil yggdrasil, EntityNetGameItem server, EntityGameCharacter character, Codexus.Cipher.Entities.WPFLauncher.NetGame.EntityMcVersion version, Codexus.Cipher.Entities.WPFLauncher.NetGame.EntityNetGameServerAddress address, string mods)
-    {
-        Codexus.Interceptors.Interceptor.CreateInterceptor(
-            new EntitySocks5 { Enabled = false },
-            mods,
-            server.EntityId,
-            server.Name,
-            version.Name,
-            address.Ip,
-            address.Port,
-            character.Name,
-            authOtp.EntityId,
-            authOtp.Token,
-            (System.Action<string>)((serverId) =>
-            {
-                Log.Information("Server ID: {Certification}", serverId);
-                var pair = OpenSDK.NEL.Md5Mapping.GetMd5FromGameVersion(version.Name);
-                var signal = new SemaphoreSlim(0);
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var success = await yggdrasil.JoinServerAsync(new Codexus.OpenSDK.Entities.Yggdrasil.GameProfile
-                        {
-                            GameId = server.EntityId,
-                            GameVersion = version.Name,
-                            BootstrapMd5 = pair.BootstrapMd5,
-                            DatFileMd5 = pair.DatFileMd5,
-                            Mods = JsonSerializer.Deserialize<Codexus.OpenSDK.Entities.Yggdrasil.ModList>(mods)!,
-                            User = new Codexus.OpenSDK.Entities.Yggdrasil.UserProfile { UserId = int.Parse(authOtp.EntityId), UserToken = authOtp.Token }
-                        }, serverId);
-                        if (success.IsSuccess) Log.Information("消息认证成功"); else Log.Error("消息认证失败: {Error}", success.Error);
-                    }
-                    catch (System.Exception e)
-                    {
-                        Log.Error(e, "认证过程中发生异常");
-                    }
-                    finally
-                    {
-                        signal.Release();
-                    }
-                });
-                signal.Wait();
-            }));
     }
 }
