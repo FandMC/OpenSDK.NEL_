@@ -1,0 +1,223 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Serilog;
+using OpenSDK.NEL.HandleWebSocket;
+
+namespace OpenSDK.NEL;
+
+internal class WebSocketServer
+{
+    public async Task StartAsync()
+    {
+        var port = GetPort();
+        var listener = new HttpListener();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Prefixes.Add($"http://localhost:{port}/");
+        listener.Start();
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                var ctx = await listener.GetContextAsync();
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await ServeContextAsync(ctx);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "请求处理异常");
+                    }
+                });
+            }
+        });
+        Log.Information("WebUI已启动: http://127.0.0.1:{Port}/", port);
+        Log.Information("WS已启动服务器: ws://127.0.0.1:{Port}/ws", port);
+    }
+
+    int GetPort()
+    {
+        var env = Environment.GetEnvironmentVariable("NEL_PORT");
+        if (int.TryParse(env, out var p) && p > 0) return p;
+        return 8080;
+    }
+
+    async Task ServeContextAsync(HttpListenerContext context)
+    {
+        var req = context.Request;
+        if (AppState.Debug)
+        {
+            Log.Information("HTTP {Method} {Url}", req.HttpMethod, req.Url);
+        }
+        if (req.Url!.AbsolutePath == "/ws")
+        {
+            if (req.IsWebSocketRequest)
+            {
+                var wsCtx = await context.AcceptWebSocketAsync(null);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await HandleWebSocket(wsCtx.WebSocket);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "WS连接处理异常");
+                    }
+                });
+                return;
+            }
+            context.Response.StatusCode = 400;
+            context.Response.Close();
+            return;
+        }
+
+        var root = Path.Combine(AppContext.BaseDirectory, "resources");
+        var path = req.Url.AbsolutePath;
+        if (path == "/") path = "/dash.html";
+        if (path == "/dash") path = "/dash.html";
+        if (path == "/serverlist") path = "/serverlist.html";
+        if (path == "/game") path = "/game.html";
+        var filePath = Path.GetFullPath(Path.Combine(root, path.TrimStart('/')));
+        if (!filePath.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !File.Exists(filePath))
+        {
+            context.Response.StatusCode = 404;
+            context.Response.Close();
+            return;
+        }
+        await WriteFileResponse(context.Response, filePath);
+    }
+
+    async Task HandleWebSocket(WebSocket ws)
+    {
+        var buffer = new byte[4096];
+        var connectedMsg = "connected";
+        if (AppState.Debug)
+        {
+            Log.Information("WS Send: {Text}", connectedMsg);
+        }
+        await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(connectedMsg)), WebSocketMessageType.Text, true, CancellationToken.None);
+        var accountsItems = AppState.Accounts.Select(kv => new { entityId = kv.Key, channel = kv.Value }).ToArray();
+        var initMsg = JsonSerializer.Serialize(new { type = "accounts", items = accountsItems });
+        if (AppState.Debug)
+        {
+            Log.Information("WS Send: {Text}", initMsg);
+        }
+        await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(initMsg)), WebSocketMessageType.Text, true, CancellationToken.None);
+        var channelItems = AppState.Channels.Values.Select(ch => new { serverId = ch.ServerId, serverName = ch.ServerName, address = ch.Ip + ":" + ch.Port }).ToArray();
+        var chMsg = JsonSerializer.Serialize(new { type = "channels", items = channelItems });
+        if (AppState.Debug)
+        {
+            Log.Information("WS Send: {Text}", chMsg);
+        }
+        await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(chMsg)), WebSocketMessageType.Text, true, CancellationToken.None);
+        while (ws.State == WebSocketState.Open)
+        {
+            var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                break;
+            }
+            var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            if (AppState.Debug)
+            {
+                Log.Information("WS Recv: {Text}", text);
+            }
+            try
+            {
+                using var doc = JsonDocument.Parse(text);
+                var root = doc.RootElement;
+                var type = root.TryGetProperty("type", out var t) ? t.GetString() : null;
+                if (type == "shutdown_game")
+                {
+                    var h = new ShutdownGameHandler();
+                    await h.ProcessAsync(ws, root);
+                    continue;
+                }
+                if (type == "open_dash")
+                {
+                    var nav = JsonSerializer.Serialize(new { type = "navigate", url = "/dash" });
+                    if (AppState.Debug)
+                    {
+                        Log.Information("WS Send: {Text}", nav);
+                    }
+                    await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(nav)), WebSocketMessageType.Text, true, CancellationToken.None);
+                    continue;
+                }
+                if (type == "open_serverlist")
+                {
+                    var nav = JsonSerializer.Serialize(new { type = "navigate", url = "/serverlist" });
+                    if (AppState.Debug)
+                    {
+                        Log.Information("WS Send: {Text}", nav);
+                    }
+                    await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(nav)), WebSocketMessageType.Text, true, CancellationToken.None);
+                    continue;
+                }
+                if (type == "open_game")
+                {
+                    var nav = JsonSerializer.Serialize(new { type = "navigate", url = "/game" });
+                    if (AppState.Debug)
+                    {
+                        Log.Information("WS Send: {Text}", nav);
+                    }
+                    await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(nav)), WebSocketMessageType.Text, true, CancellationToken.None);
+                    continue;
+                }
+                if (!string.IsNullOrWhiteSpace(type))
+                {
+                    var handler = HandlerFactory.Get(type);
+                    if (handler != null)
+                    {
+                        await handler.ProcessAsync(ws, root);
+                        continue;
+                    }
+                }
+                if (AppState.Debug)
+                {
+                    Log.Information("WS Echo: {Text}", text);
+                }
+                await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(text)), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch
+            {
+                if (AppState.Debug)
+                {
+                    Log.Information("WS Echo on error: {Text}", text);
+                }
+                await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(text)), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+        }
+    }
+
+    async Task WriteFileResponse(HttpListenerResponse resp, string filePath)
+    {
+        var content = await File.ReadAllBytesAsync(filePath);
+        resp.ContentType = GetMimeType(filePath);
+        resp.ContentLength64 = content.Length;
+        await resp.OutputStream.WriteAsync(content, 0, content.Length);
+        resp.Close();
+    }
+
+    string GetMimeType(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext == ".html") return "text/html";
+        if (ext == ".css") return "text/css";
+        if (ext == ".js") return "application/javascript";
+        if (ext == ".png") return "image/png";
+        if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
+        if (ext == ".svg") return "image/svg+xml";
+        if (ext == ".ico") return "image/x-icon";
+        return "application/octet-stream";
+    }
+}

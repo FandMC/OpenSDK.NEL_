@@ -1,5 +1,6 @@
 using Codexus.Cipher.Protocol;
 using Codexus.OpenSDK;
+using System.IO;
 
 namespace OpenSDK.NEL.HandleWebSocket;
 using System.Text.Json;
@@ -115,6 +116,18 @@ internal class StartProxyHandler : IWsHandler
                     {
                         try
                         {
+                            if (AppState.Debug)
+                            {
+                                var saltPath = Path.Combine(AppContext.BaseDirectory, "Salt.crc");
+                                var crcSalt = File.Exists(saltPath) ? File.ReadAllText(saltPath).Trim() : "";
+                                Log.Information("YGG Join Params: serverId={ServerId}, serverName={ServerName}, role={Role}, version={Version}", serverId, serverName, selectedCharacter.Name, version.Name);
+                                Log.Information("YGG Join Profile: gameId={GameId}, gameVersion={GameVersion}, bootstrapMd5={BootstrapMd5}, datFileMd5={DatFileMd5}, modsLength={ModsLength}", serverId, version.Name, pair.BootstrapMd5, pair.DatFileMd5, mods.Length);
+                                var tk = authOtp.Token ?? string.Empty;
+                                var tkPreview = tk.Length > 8 ? tk.Substring(0, 8) + "..." : tk;
+                                Log.Information("YGG User: userId={UserId}, tokenPreview={TokenPreview}, tokenLength={TokenLength}", authOtp.EntityId, tkPreview, tk.Length);
+                                Log.Information("YGG Data: launcherVersion={LauncherVersion}, channel={Channel}, crcSalt={CrcSalt}", AppState.Services!.X19.GameVersion, "netease", crcSalt);
+                                Log.Information("Target Auth Address: {Ip}:{Port}", address.Data!.Ip, address.Data!.Port);
+                            }
                             var success = await services.Yggdrasil.JoinServerAsync(new Codexus.OpenSDK.Entities.Yggdrasil.GameProfile
                             {
                                 GameId = serverId,
