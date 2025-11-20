@@ -19,7 +19,8 @@ internal static class HandlerFactory
         ["start_proxy"] = new StartProxyHandler(),
         ["list_channels"] = new ListChannelsHandler(),
         ["close_channel"] = new ShutdownGameHandler(),
-        ["shutdown_game"] = new ShutdownGameHandler()
+        ["shutdown_game"] = new ShutdownGameHandler(),
+        ["get_free_account"] = new GetFreeAccountHandler()
     };
 
     public static IWsHandler? Get(string type)
