@@ -6,6 +6,7 @@ using OpenSDK.NEL;
 
 internal class SelectAccountHandler : IWsHandler
 {
+    public string Type => "select_account";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var id = root.TryGetProperty("entityId", out var idProp2) ? idProp2.GetString() : null;

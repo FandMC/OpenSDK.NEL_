@@ -8,6 +8,7 @@ using OpenSDK.NEL;
 
 internal class CookieLoginHandler : IWsHandler
 {
+    public string Type => "cookie_login";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var cookie = root.TryGetProperty("cookie", out var c) ? c.GetString() : null;

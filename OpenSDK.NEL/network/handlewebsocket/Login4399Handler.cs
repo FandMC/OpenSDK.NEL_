@@ -8,6 +8,7 @@ using Codexus.OpenSDK.Exceptions;
 
 internal class Login4399Handler : IWsHandler
 {
+    public string Type => "login_4399";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var account = root.TryGetProperty("account", out var acc) ? acc.GetString() : null;
@@ -35,7 +36,7 @@ internal class Login4399Handler : IWsHandler
             var cap = JsonSerializer.Serialize(new { type = "captcha_required", account, password });
             await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(cap)), System.Net.WebSockets.WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Log.Error(ex, "4399登录失败");
             var err = JsonSerializer.Serialize(new { type = "login_error", message = ex.Message ?? "登录失败" });

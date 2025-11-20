@@ -9,9 +9,9 @@ using Codexus.Cipher.Entities;
 
 internal class ListServersHandler : IWsHandler
 {
+    public string Type => "list_servers";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
-        var keyword = root.TryGetProperty("keyword", out var k) ? k.GetString() : string.Empty;
         var sel = AppState.SelectedAccountId;
         if (string.IsNullOrEmpty(sel) || !AppState.Auths.TryGetValue(sel, out var auth))
         {
@@ -21,11 +21,22 @@ internal class ListServersHandler : IWsHandler
         }
         try
         {
-            var servers = await auth.Api<EntityNetGameKeyword, Entities<EntityNetGameItem>>(
-                "/item/query/search-by-keyword",
-                new EntityNetGameKeyword { Keyword = keyword ?? string.Empty });
+            var pageSize = root.TryGetProperty("length", out var lp) && lp.TryGetInt32(out var lval) ? lval : 15;
+            var offset = root.TryGetProperty("offset", out var op) && op.TryGetInt32(out var oval) ? oval : 0;
+            var payload = JsonSerializer.Serialize(new {
+                AvailableMcVersions = Array.Empty<string>(),
+                ItemType = 1,
+                Length = pageSize,
+                Offset = offset,
+                MasterTypeId = "2",
+                SecondaryTypeId = ""
+            });
+            using var docReq = JsonDocument.Parse(payload);
+            var servers = await auth.Api<JsonElement, Entities<EntityNetGameItem>>(
+                "/item/query/available",
+                docReq.RootElement);
             
-            Log.Information("服务器搜索: 关键字={Keyword}, 数量={Count}", keyword, servers.Data?.Length ?? 0);
+            Log.Information("服务器列表: 数量={Count}", servers.Data?.Length ?? 0);
             var items = servers.Data.Select(s => new { entityId = s.EntityId, name = s.Name }).ToArray();
             var msg = JsonSerializer.Serialize(new { type = "servers", items });
             await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(msg)), System.Net.WebSockets.WebSocketMessageType.Text, true, System.Threading.CancellationToken.None);

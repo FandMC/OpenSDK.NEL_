@@ -82,10 +82,7 @@ internal class WebSocketServer
 
         var root = Path.Combine(AppContext.BaseDirectory, "resources");
         var path = req.Url.AbsolutePath;
-        if (path == "/") path = "/dash.html";
-        if (path == "/dash") path = "/dash.html";
-        if (path == "/serverlist") path = "/serverlist.html";
-        if (path == "/game") path = "/game.html";
+        if (path == "/") path = "/index.html";
         var filePath = Path.GetFullPath(Path.Combine(root, path.TrimStart('/')));
         if (!filePath.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !File.Exists(filePath))
         {
@@ -137,42 +134,7 @@ internal class WebSocketServer
                 using var doc = JsonDocument.Parse(text);
                 var root = doc.RootElement;
                 var type = root.TryGetProperty("type", out var t) ? t.GetString() : null;
-                if (type == "shutdown_game")
-                {
-                    var h = new ShutdownGameHandler();
-                    await h.ProcessAsync(ws, root);
-                    continue;
-                }
-                if (type == "open_dash")
-                {
-                    var nav = JsonSerializer.Serialize(new { type = "navigate", url = "/dash" });
-                    if (AppState.Debug)
-                    {
-                        Log.Information("WS Send: {Text}", nav);
-                    }
-                    await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(nav)), WebSocketMessageType.Text, true, CancellationToken.None);
-                    continue;
-                }
-                if (type == "open_serverlist")
-                {
-                    var nav = JsonSerializer.Serialize(new { type = "navigate", url = "/serverlist" });
-                    if (AppState.Debug)
-                    {
-                        Log.Information("WS Send: {Text}", nav);
-                    }
-                    await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(nav)), WebSocketMessageType.Text, true, CancellationToken.None);
-                    continue;
-                }
-                if (type == "open_game")
-                {
-                    var nav = JsonSerializer.Serialize(new { type = "navigate", url = "/game" });
-                    if (AppState.Debug)
-                    {
-                        Log.Information("WS Send: {Text}", nav);
-                    }
-                    await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(nav)), WebSocketMessageType.Text, true, CancellationToken.None);
-                    continue;
-                }
+                
                 if (!string.IsNullOrWhiteSpace(type))
                 {
                     var handler = HandlerFactory.Get(type);

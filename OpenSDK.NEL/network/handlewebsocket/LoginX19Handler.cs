@@ -8,6 +8,7 @@ using Codexus.OpenSDK.Entities.X19;
 
 internal class LoginX19Handler : IWsHandler
 {
+    public string Type => "login_x19";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var email = root.TryGetProperty("email", out var e) ? e.GetString() : null;

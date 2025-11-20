@@ -7,6 +7,7 @@ using OpenSDK.NEL;
 
 internal class DeleteAccountHandler : IWsHandler
 {
+    public string Type => "delete_account";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var id = root.TryGetProperty("entityId", out var idProp) ? idProp.GetString() : null;
@@ -18,7 +19,8 @@ internal class DeleteAccountHandler : IWsHandler
         }
         if (AppState.Accounts.TryRemove(id, out _))
         {
-            Log.Information("已删除账号: {Id}", id);
+            if(AppState.Debug)Log.Information("已删除账号: {Id}", id);
+            
             if (AppState.SelectedAccountId == id) AppState.SelectedAccountId = null;
         }
         else

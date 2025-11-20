@@ -9,6 +9,7 @@ using Codexus.Cipher.Entities.WPFLauncher.NetGame;
 
 internal class OpenServerHandler : IWsHandler
 {
+    public string Type => "open_server";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var serverId = root.TryGetProperty("serverId", out var sid) ? sid.GetString() : null;

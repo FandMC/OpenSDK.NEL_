@@ -10,6 +10,7 @@ using Serilog;
 
 internal class CreateRoleNamedHandler : IWsHandler
 {
+    public string Type => "create_role_named";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var serverId = root.TryGetProperty("serverId", out var sid) ? sid.GetString() : null;

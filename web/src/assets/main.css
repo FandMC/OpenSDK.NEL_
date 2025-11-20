@@ -1,0 +1,38 @@
+@import './base.css';
+@import './autofill.css';
+
+#app {
+  height: 100vh;
+  padding: 0;
+}
+
+a,
+.green {
+  text-decoration: none;
+  color: hsla(160, 100%, 37%, 1);
+  transition: 0.4s;
+  padding: 3px;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: hsla(160, 100%, 37%, 0.2);
+  }
+}
+
+.layout {
+  display: flex;
+  height: 100%;
+}
+.sidebar {
+  width: 240px;
+  background: var(--color-background);
+  color: var(--color-text);
+  border-right: 1px solid var(--color-border);
+}
+.content {
+  flex: 1;
+  background: var(--color-background);
+  color: var(--color-text);
+  overflow: auto;
+}

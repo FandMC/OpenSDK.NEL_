@@ -7,9 +7,10 @@ using OpenSDK.NEL.Manager;
 
 internal class ShutdownGameHandler : IWsHandler
 {
+    public string Type => "shutdown_game";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
-        var closed = new System.Collections.Generic.List<string>();
+        var closed = new List<string>();
         if (root.TryGetProperty("identifiers", out var arr) && arr.ValueKind == JsonValueKind.Array)
         {
             foreach (var el in arr.EnumerateArray())

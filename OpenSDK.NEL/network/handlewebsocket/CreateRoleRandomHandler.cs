@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 
 internal class CreateRoleRandomHandler : IWsHandler
 {
+    public string Type => "create_role_random";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var serverId = root.TryGetProperty("serverId", out var sid) ? sid.GetString() : null;

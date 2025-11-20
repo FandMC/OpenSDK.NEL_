@@ -6,6 +6,7 @@ using OpenSDK.NEL;
 
 internal class ListAccountsHandler : IWsHandler
 {
+    public string Type => "list_accounts";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var items = AppState.Accounts.Select(kv => new { entityId = kv.Key, channel = kv.Value }).ToArray();

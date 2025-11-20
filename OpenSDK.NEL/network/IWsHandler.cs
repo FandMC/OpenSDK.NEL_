@@ -5,5 +5,6 @@ using System.Net.WebSockets;
 
 internal interface IWsHandler
 {
+    string Type { get; }
     Task ProcessAsync(WebSocket ws, JsonElement root);
 }

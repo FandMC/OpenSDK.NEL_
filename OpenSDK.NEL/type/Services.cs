@@ -5,7 +5,6 @@ using Codexus.Cipher.Entities.WPFLauncher.NetGame;
 using Codexus.OpenSDK.Yggdrasil;
 
 internal record Services(
-    Channel4399Register Register,
     C4399 C4399,
     X19 X19,
     StandardYggdrasil Yggdrasil

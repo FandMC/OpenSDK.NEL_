@@ -16,6 +16,7 @@ using Serilog;
 
 internal class GetFreeAccountHandler : IWsHandler
 {
+    public string Type => "get_free_account";
     public async Task ProcessAsync(WebSocket ws, JsonElement root)
     {
         Log.Information("正在获取4399小号...");

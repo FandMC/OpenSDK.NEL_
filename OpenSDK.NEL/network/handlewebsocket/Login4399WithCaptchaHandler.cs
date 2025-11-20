@@ -7,6 +7,7 @@ using OpenSDK.NEL;
 
 internal class Login4399WithCaptchaHandler : IWsHandler
 {
+    public string Type => "login_4399_with_captcha";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var sessionId = root.TryGetProperty("sessionId", out var sidp) ? sidp.GetString() : null;

@@ -6,6 +6,7 @@ using OpenSDK.NEL;
 
 internal class ListChannelsHandler : IWsHandler
 {
+    public string Type => "list_channels";
     public async Task ProcessAsync(System.Net.WebSockets.WebSocket ws, JsonElement root)
     {
         var items = AppState.Channels.Values.Select(ch => new {

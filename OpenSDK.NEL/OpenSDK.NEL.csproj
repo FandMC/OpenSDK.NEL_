@@ -7,6 +7,8 @@
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
     <AssemblyName>OpenSDK.NEL</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WarningLevel>0</WarningLevel>
   </PropertyGroup>
 
     <ItemGroup>
@@ -44,6 +46,9 @@
         <PackageReference Include="SharpZipLib" Version="1.4.2"/>
         <PackageReference Include="System.IO.Hashing" Version="10.0.0"/>
         <PackageReference Include="YamlDotNet" Version="16.3.0"/>
+        <PackageReference Include="Selenium.WebDriver" Version="4.38.0"/>
+        <PackageReference Include="Selenium.Support" Version="4.38.0"/>
+        <PackageReference Include="WebDriverManager" Version="2.17.6"/>
   </ItemGroup>
 
   <ItemGroup>
