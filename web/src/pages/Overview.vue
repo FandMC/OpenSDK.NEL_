@@ -1,5 +1,11 @@
 <template>
   <div class="overview">
+    <div class="card announcement-card">
+      <div class="card-title">公告</div>
+      <div class="card-body">
+        <div class="announcement" :class="announcementClass">{{ announcementText }}</div>
+      </div>
+    </div>
     <div class="card status-card">
       <div class="card-title">连接状态</div>
       <div class="card-body">
@@ -73,6 +79,9 @@ import Modal from '../components/Modal.vue'
 import appConfig from '../config/app.js'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 const wsUrl = appConfig.getWsUrl()
+const announcementText = ref('加载中...')
+const announcementLevel = ref('info')
+const announcementClass = computed(() => announcementLevel.value)
 const accounts = ref([])
 const showAdd = ref(false)
 const newType = ref('cookie')
@@ -225,12 +234,37 @@ onMounted(() => {
       }
     }
   } catch {}
+  fetchAnnouncement()
 })
 onUnmounted(() => {
   try {
     if (socket && socket.readyState === 1) socket.close()
   } catch {}
 })
+
+function fetchAnnouncement() {
+  const url = appConfig.getAnnouncementUrl()
+  try {
+    fetch(url, { headers: { 'Accept': 'text/plain, application/json' } })
+      .then(r => r.text())
+      .then(t => {
+        let v = t && t.trim()
+        try {
+          const j = JSON.parse(t)
+          v = typeof j === 'string' ? j : (j.message || j.data || t)
+        } catch {}
+        announcementText.value = v || '暂无公告'
+        announcementLevel.value = 'info'
+      })
+      .catch(() => {
+        announcementText.value = '公告加载失败'
+        announcementLevel.value = 'error'
+      })
+  } catch {
+    announcementText.value = '公告不可用'
+    announcementLevel.value = 'error'
+  }
+}
 </script>
 
 <style scoped>
@@ -249,9 +283,8 @@ onUnmounted(() => {
   background: var(--color-background);
   color: var(--color-text);
 }
-.status-card {
-  width: 360px;
-}
+.announcement-card { width: 100%; }
+.status-card { width: 360px; }
 .card-title {
   display: flex;
   align-items: center;
@@ -416,4 +449,7 @@ onUnmounted(() => {
 .free-alert.info { color: #1e90ff; }
 .free-alert.ok { color: #10b981; }
 .free-alert.error { color: #ef4444; }
+.announcement { font-size: 14px; white-space: pre-wrap; }
+.announcement.info { color: var(--color-text); opacity: 0.9; }
+.announcement.error { color: #ef4444; }
 </style>

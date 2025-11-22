@@ -21,6 +21,11 @@ export const getWsUrl = () => {
 const getRandomNameUrl = () => {
   const fromStorage = typeof localStorage !== 'undefined' ? localStorage.getItem('NEL_RANDOM_NAME_URL') : null
   const fromEnv = typeof import.meta !== 'undefined' ? import.meta.env && import.meta.env.VITE_RANDOM_NAME_URL : null
-  return fromStorage || fromEnv || 'https://wapi.wangyupu.com/api/nng'
+  return fromStorage || fromEnv || '/nel-random-name'
 }
-export default { getWsUrl, getRandomNameUrl }
+const getAnnouncementUrl = () => {
+  const fromStorage = typeof localStorage !== 'undefined' ? localStorage.getItem('NEL_ANNOUNCEMENT_URL') : null
+  const fromEnv = typeof import.meta !== 'undefined' ? import.meta.env && import.meta.env.VITE_ANNOUNCEMENT_URL : null
+  return fromStorage || fromEnv || '/nel-announcement'
+}
+export default { getWsUrl, getRandomNameUrl, getAnnouncementUrl }

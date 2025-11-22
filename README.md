@@ -1,5 +1,29 @@
-# 概括
-## 基于[这里](https://github.com/corpnetease/OpenSDK.NEL)制作的nel
+OpenSDK.NEL
+===========
 
-## 特性
-可以兼容并加载 Codexus.Gateway 的多数插件。
+[![OpenSDK.NEL Download](https://img.shields.io/github/downloads/FandMC/OpenSDK.NEL_/total?color=0&logo=github)](https://github.com/FandMC/OpenSDK.NEL/releases/latest)
+[![QQ](https://img.shields.io/badge/QQ_Unofficial-574456857-blue)](https://qm.qq.com/q/6gMnBzTV2E)
+
+## 本项目基于基于 [Codexus.OpenSDK](https://github.com/corpnetease/Codexus.OpenSDK) 以及 Codexus.Development.SDK 制作的第三方启动器
+### 安装要求
+- .Net 9.0
+
+### 安装步骤
+1. 载最新的构建结果
+2. 双击打开即可
+
+### 怎么装插件？
+1. 加群[![QQ](https://img.shields.io/badge/574456857-blue)](https://qm.qq.com/q/6gMnBzTV2E)
+2. 下载插件并放入plugins文件夹
+3. 重启程序即可
+
+## 开源协议
+本项目遵循 **[GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)** 协议开源
+```text
+OpenSDK.NEL Copyright (C) 2025 OpenSDK.NEL Studio
+本程序是自由软件，你可以重新发布或修改它，但必须：
+- 保留原始版权声明
+- 采用相同许可证分发
+- 提供完整的源代码
+```
+详细条款请查阅 [LICENSE](LICENSE) 文件。

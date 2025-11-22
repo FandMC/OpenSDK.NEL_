@@ -10,6 +10,13 @@ using OpenSDK.NEL.Utils;
 
 ConfigureLogger();
 
+Log.Information("OpenSDK.NEL github: {github}",AppInfo.GithubURL);
+Log.Information("版本: {version}",AppInfo.AppVersion);
+Log.Information("QQ群: {qqgroup}",AppInfo.QQGroup);
+Log.Information("本项目遵循 GNU GPL 3.0 协议开源");
+Log.Information("https://www.gnu.org/licenses/gpl-3.0.zh-cn.html");
+Log.Information("OpenSDK.NEL  Copyright (C) 2025 OpenSDK.NEL Studio\n本程序是自由软件，你可以重新发布或修改它，但必须：\n- 保留原始版权声明\n- 采用相同许可证分发\n- 提供完整的源代码");
+
 await new WebSocketServer().StartAsync();
 await InitializeSystemComponentsAsync();
 AppState.Services = await CreateServices();
@@ -38,10 +45,6 @@ static async Task InitializeSystemComponentsAsync()
 
 static async Task<Services> CreateServices()
 {
-    Log.Information("OpenSDK.NEL github: {github}",AppInfo.GithubURL);
-    Log.Information("版本: {version}",AppInfo.AppVersion);
-    Log.Information("QQ群: {qqgroup}",AppInfo.QQGroup);
-    
     var c4399 = new C4399();
     var x19 = new X19();
 
