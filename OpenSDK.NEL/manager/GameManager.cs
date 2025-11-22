@@ -91,7 +91,9 @@ namespace OpenSDK.NEL.Manager
                                 Mods = JsonSerializer.Deserialize<Codexus.OpenSDK.Entities.Yggdrasil.ModList>(mods)!,
                                 User = new Codexus.OpenSDK.Entities.Yggdrasil.UserProfile { UserId = int.Parse(auth.EntityId), UserToken = auth.Token }
                             }, sid);
-                            if (success.IsSuccess) Log.Information("消息认证成功"); else Log.Error("消息认证失败: {Error}", success.Error);
+                            if (success.IsSuccess) 
+                                if(AppState.Debug)Log.Information("消息认证成功"); 
+                                else Log.Error("消息认证失败: {Error}", success.Error);
                         }
                         catch (Exception e)
                         {
