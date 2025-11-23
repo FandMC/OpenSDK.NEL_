@@ -1,3 +1,7 @@
+⚠⚠⚠
+警告：目前OpenSDK.NEL已改名为OpenNEL
+请移步(新仓库)[https://github.com/FandMC/OpenNEL]
+
 OpenSDK.NEL
 ===========
 
